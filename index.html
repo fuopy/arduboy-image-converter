@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Image Converter</title>
+    <h1>Arduboy Game Image Converter</h1>
+    <p>Using Chrome, paste an image into this page. Click the image to copy the resulting code and enjoy!</p>
+   
+    <div id="image-container">
+    
+    </div>
+    
+    <p><a href="https://github.com/fuopy/arduboy-image-converter">View on GitHub</a></p>
+	
+	<style type="text/css">
+        body {
+            font-family: Arial;
+            background-color: darkgrey;
+            text-shadow: 2px 2px black;
+            color: white;
+            background-image: url("bg.png");
+            background-repeat: repeat-both;
+        }
+        a {
+            color: white;
+            text-decoration: none;
+        }
+        a:hover {
+            color: yellow;
+            background-color: black;
+        }
+        .shadowy {
+        }
+        .image-view {
+            display: inline-block;
+            font-size: 1pt;
+            border: 2px solid lightgrey;
+            margin: 1px;
+        }
+        .image-view:hover {
+            border: 2px solid red;
+        }
+        canvas,
+        img {
+            image-rendering: crisp-edges;
+            image-rendering: -moz-crisp-edges;
+            image-rendering: -webkit-optimize-contrast;
+            image-rendering: optimize-contrast;
+            image-rendering: pixelated;
+            -ms-interpolation-mode: nearest-neighbor;
+        }
+        .code {
+            overflow: hidden;
+            display: block;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 1px;
+            height: 1px;
+        }
+        #image-container {
+            padding: 1px;
+            background-color: rgba(255, 255, 255, 0.5);
+        }
+
+	</style>
+	
+</head>
+<body>
+
+<script type="text/javascript">
+
+function getImageData(event) {
+    // Get items from the clipboard
+    var clipboardData = event.clipboardData || event.originalEvent.clipboardData;
+    var clipboardItems = clipboardData.items;
+    
+    // Return the image item, if it exists
+    for(var item in clipboardItems) {
+        if(clipboardItems[item].type.indexOf("image") === 0) {
+            return clipboardItems[item].getAsFile();
+        }
+    }
+}
+
+function addPastedElement(imageData) {
+    var reader = new FileReader();
+    reader.onload = function(event) {
+        event.preventDefault;
+    
+        // Create image element
+        var pastedImage = new Image();
+        pastedImage.src = event.target.result;
+        
+        // Create canvas for image
+        var pastedImageCanvas = document.createElement("canvas");
+        pastedImageCanvas.width = pastedImage.naturalWidth;
+        pastedImageCanvas.height = pastedImage.naturalHeight;
+        
+        // Create code container
+        var pastedImageCode = document.createElement("div");
+        pastedImageCode.className = "code";
+        
+        // Create div container
+        var pastedImageDiv = document.createElement("div");
+        pastedImageDiv.className = "image-view";
+        pastedImageDiv.appendChild(pastedImageCanvas);
+        
+        var imageContainer = document.getElementById("image-container");
+        imageContainer.appendChild(pastedImageDiv);
+        imageContainer.appendChild(pastedImageCode);
+        
+        // Create context for drawing
+        var pastedImageContext = pastedImageCanvas.getContext("2d");
+        
+        // Draw the image
+        pastedImageContext.drawImage(pastedImage, 0, 0);
+        
+        // Generate the sprite string
+        var spriteString = "{<br />\t";
+        
+        var pageCount = Math.ceil(pastedImage.naturalHeight / 8);
+        var columnCount = pastedImage.naturalWidth;
+        var currentByte = 0;
+        
+        // Read the sprite page-by-page
+        for(var page = 0; page < pageCount; page++) {
+        
+            // Read the page column-by-column
+            for(var column = 0; column < columnCount; column++) {
+            
+                // Read the column into a byte
+                var spriteByte = 0;
+                for(var yPixel = 0; yPixel < 8; yPixel++) {
+                
+                    // If the color of the pixel is not black, count it as white
+                    var pixelColor = pastedImageContext.getImageData(column, page*8 + yPixel, 1, 1).data;
+                    if(pixelColor[0] > 0 || pixelColor[1] > 0 || pixelColor[2] > 0) {
+                        spriteByte |= (1 << yPixel);
+                    }
+                }
+                
+                // Print the column in hex notation, add a comma for formatting
+                var digitStr = spriteByte.toString(16);
+                if(digitStr.length == 1) {
+                    digitStr = "0" + digitStr;
+                }
+                spriteString += "0x" + digitStr + ", ";
+                if(currentByte%8 == 7) spriteString += "<br />\t";
+                currentByte++;
+            }
+        }
+
+        // Terminate the array
+        spriteString += "<br />};";
+
+        // Create an invisible element containing the string
+        pastedImageCode.innerHTML = spriteString;
+        
+        // Resize canvas to show 3x scaled image
+        pastedImageCanvas.width = pastedImage.naturalWidth * 3;
+        pastedImageCanvas.height = pastedImage.naturalHeight * 3;
+        pastedImageContext = pastedImageCanvas.getContext("2d");
+        pastedImageContext.imageSmoothingEnabled = false;
+        pastedImageContext.drawImage(pastedImage, 0, 0, pastedImage.naturalWidth * 3, pastedImage.naturalHeight * 3);
+        
+        // Copy the string to the clipboard
+        pastedImageCanvas.onclick = function() {
+            var range = document.createRange();
+            range.selectNode(pastedImageCode);
+            var userSelection = window.getSelection();
+            userSelection.removeAllRanges();
+            userSelection.addRange(range);
+            document.execCommand('copy')
+            userSelection.removeAllRanges();
+        }
+    };
+    
+    reader.readAsDataURL(imageData);
+}
+
+document.onpaste = function (event) {
+    // Get the image data
+    var imageData = getImageData(event);
+    
+    // If there is some data, add it to the page
+    if(imageData !== null) {
+        addPastedElement(imageData);
+    }
+}
+
+</script>
+
+</body>
+</html>
