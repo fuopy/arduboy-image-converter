@@ -4,23 +4,19 @@
 <head>
 	<meta charset="utf-8">
 	<title>Image Converter</title>
-    <h1>Arduboy Game Image Converter</h1>
-    <p>Using Chrome, paste an image into this page. Click the image to copy the resulting code and enjoy!</p>
-   
-    <div id="image-container">
-    
-    </div>
-    
-    <p><a href="https://github.com/fuopy/arduboy-image-converter">View on GitHub</a></p>
-	
+
 	<style type="text/css">
+		h1, h3 {
+			text-align: center;
+		}
+		h4 {
+			text-align: right;
+		}
         body {
             font-family: Arial;
-            background-color: darkgrey;
+            background-color: #AD8E58;
             text-shadow: 2px 2px black;
             color: white;
-            background-image: url("bg.png");
-            background-repeat: repeat-both;
         }
         a {
             color: white;
@@ -61,15 +57,41 @@
         }
         #image-container {
             padding: 1px;
-            background-color: rgba(255, 255, 255, 0.5);
         }
+		#ino-download-pane {
+			background-color: rgba(0, 0, 0, 0.5);
+			margin: 6px;
+			padding: 6px;
+			float: left;
+		}
 
 	</style>
 	
 </head>
 <body>
 
-<script type="text/javascript">
+	<h1>Arduboy Game Image Converter</h1>
+	<h3>Using Chrome, paste an image into this page. Click the image to copy the resulting code and enjoy!</h3>
+
+	<hr />
+
+	<div id="image-container">
+
+	</div>
+	
+	<hr />
+	
+	<div id="ino-download-pane" style="display:none">
+		Image code copied to the clipboard!<br /><br />
+		Test it out on your arduboy now:<br />
+		<a id="ino-download-link" href="about:blank" download="imgtest.ino"></a>
+	</div>
+
+	<h4>
+		<a href="https://github.com/fuopy/arduboy-image-converter">View on GitHub</a></p>
+	</h4>
+	
+	<script type="text/javascript">
 
 function getImageData(event) {
     // Get items from the clipboard
@@ -118,7 +140,11 @@ function addPastedElement(imageData) {
         pastedImageContext.drawImage(pastedImage, 0, 0);
         
         // Generate the sprite string
-        var spriteString = "{<br />\t";
+        var spriteString = "{<br />&#09;";
+		var inoString = "#include <Arduboy.h>\n\nArduboy arduboy;\n\n" +
+			"#define WIDTH " + pastedImage.naturalWidth + "\n" +
+			"#define HEIGHT " + pastedImage.naturalHeight + "\n\n" +
+			"const unsigned char image[] PROGMEM = {\n\t";
         
         var pageCount = Math.ceil(pastedImage.naturalHeight / 8);
         var columnCount = pastedImage.naturalWidth;
@@ -147,13 +173,30 @@ function addPastedElement(imageData) {
                     digitStr = "0" + digitStr;
                 }
                 spriteString += "0x" + digitStr + ", ";
-                if(currentByte%8 == 7) spriteString += "<br />\t";
+                inoString += "0x" + digitStr + ", ";
+                if(currentByte%8 == 7) {
+					spriteString += "<br />&#09;";
+					inoString += "\n\t";
+				}
                 currentByte++;
             }
         }
 
         // Terminate the array
         spriteString += "<br />};";
+        inoString += '\n};\n\n' +
+			'void setup()\n' +
+			'{\n' +
+			'\tarduboy.beginNoLogo();\n' +
+			'\t\n' +
+			'\tarduboy.clear();\n' +
+			'\tarduboy.drawBitmap(0, 0, image, WIDTH, HEIGHT, 1);\n' +
+			'\tarduboy.display();\n' +
+			'}\n\n' +
+			'void loop()\n' +
+			'{\n' +
+			'\n' +
+			'}\n\n';
 
         // Create an invisible element containing the string
         pastedImageCode.innerHTML = spriteString;
@@ -165,8 +208,8 @@ function addPastedElement(imageData) {
         pastedImageContext.imageSmoothingEnabled = false;
         pastedImageContext.drawImage(pastedImage, 0, 0, pastedImage.naturalWidth * 3, pastedImage.naturalHeight * 3);
         
-        // Copy the string to the clipboard
         pastedImageCanvas.onclick = function() {
+			// Copy the string to the clipboard
             var range = document.createRange();
             range.selectNode(pastedImageCode);
             var userSelection = window.getSelection();
@@ -174,10 +217,45 @@ function addPastedElement(imageData) {
             userSelection.addRange(range);
             document.execCommand('copy')
             userSelection.removeAllRanges();
+			
+			// Create test .ino download
+			createSketchDownload(inoString);
         }
     };
     
     reader.readAsDataURL(imageData);
+}
+
+var generatedInoFile = null;
+function createInoFile(text) {
+	var file = generatedInoFile;
+	
+	// Create a new blob from the text
+	var data = new Blob([text], {type: 'text/plain'});
+	
+	// Remove the old file, if it exists
+	if(file !== null) {
+		window.URL.revokeObjectURL(file);
+	}
+	
+	// Return a URL for the file
+	file = window.URL.createObjectURL(data);
+	return file;
+}
+
+function createSketchDownload(text) {
+	// Set the filename for the download link
+	var downloadLink = document.getElementById("ino-download-link");
+	var filename = "imgtest-" + new Date().toISOString().replace(/\s/g, '') + ".ino";
+	downloadLink.download = filename;
+	downloadLink.innerHTML = filename;
+	
+	// Create the file to download
+	downloadLink.href = createInoFile(text);
+	
+	// Show the download file pane
+	var downloadPane = document.getElementById("ino-download-pane");
+	downloadPane.style.display = "inline-block";
 }
 
 document.onpaste = function (event) {
@@ -190,7 +268,7 @@ document.onpaste = function (event) {
     }
 }
 
-</script>
+	</script>
 
 </body>
 </html>
