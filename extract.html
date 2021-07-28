@@ -6,11 +6,61 @@
 	<title>Image Extractor</title>
 
     <style type="text/css">
-.outputSprite {
-    border: 1px solid yellow;
+h1, h3 {
+    text-align: center;
+    text-shadow: 2px 2px black;
+}
+h4 {
+    text-align: right;
+    text-shadow: 2px 2px black;
 }
 body {
+    font-family: Arial;
     background-color: #AD8E58;
+    color: white;
+}
+a {
+    color: white;
+    text-decoration: none;
+}
+a:hover {
+    color: yellow;
+    background-color: black;
+}
+.image-view {
+    display: inline-block;
+    font-size: 1pt;
+    border: 2px solid lightgrey;
+    margin: 1px;
+}
+.image-view:hover {
+    border: 2px solid red;
+}
+#ino-download-pane {
+    background-color: rgba(0, 0, 0, 0.5);
+    margin: 6px;
+    padding: 6px;
+    float: left;
+}
+canvas,
+img {
+    image-rendering: crisp-edges;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: optimize-contrast;
+    image-rendering: pixelated;
+    -ms-interpolation-mode: nearest-neighbor;
+}
+.inputForm {
+    border: 3px solid black;
+    color: black;
+    display: inline-block;
+    background-color: rgb(189, 126, 31);
+}
+.submitArea {
+    text-align: right;
+    background-color: rgb(34, 27, 11);
+    padding: 3px;
 }
     </style>
 </head>
@@ -18,17 +68,39 @@ body {
 	<h1>Arduboy Game Image Converter</h1>
 	<h3>Paste data into this page, type in the dimensions, hit convert!</h3>
 
-    Sprite data from C++ Project: <input type="text" id="dataForm"><br />
-    Sprite width: <input type="text", id="spriteWidthForm"><br />
-    Sprite height: <input type="text", id="spriteHeightForm"><br />
+    <div class="inputForm">
+        <table>
+            <tr>
+                <td>Sprite data from C++ Project:</td>
+                <td><input type="text" id="dataForm"></td>
+            </tr>
+            <tr>
+                <td>Sprite width:</td>
+                <td><input type="text", id="spriteWidthForm"></td>
+            </tr>
+            <tr>
+                <td>Sprite height:</td>
+                <td><input type="text", id="spriteHeightForm"></td>
+            </tr>
+        </table>
 
-    <input type="button" onclick="submitData();" value="Convert!">
+        <div class="submitArea">
+            <input type="button" onclick="clearData();" value="Clear All">
+            <input type="button" onclick="submitData();" value="Convert">
+        </div>
+    </div>
 
     <br />
 
+    <hr />
     <div id="SpriteCanvasContainer"></div>
+    <hr />
 
 
+	<h4>
+		<a href="https://github.com/fuopy/arduboy-image-converter">View on GitHub</a></p>
+	</h4>
+    
     <script type="text/javascript">
 
 //const parserExpression = /(0x\d\d+)/g;
@@ -76,9 +148,21 @@ function createSpriteCanvas(width, height)
 
     el.width = width;
     el.height = height;
-    el.className = "outputSprite";
+    el.className = "image-view";
 
     return el;
+}
+
+
+function clearData()
+{
+    // Clear the input fields.
+    let dataForm = document.querySelector("#dataForm");
+    let spriteWidthElement = document.querySelector("#spriteWidthForm");
+    let spriteHeightElement = document.querySelector("#spriteHeightForm");
+    dataForm.value = "";
+    spriteWidthElement.value = "";
+    spriteHeightElement.value = "";
 }
 
 function submitData()
@@ -95,6 +179,8 @@ function submitData()
 
     // Parse the C++ data.
     let bytes = parseText(dataForm.value);
+
+    let breakElement = document.createElement("br");
 
     // Draw all pixels on the canvas.
     let x = 0;
@@ -115,6 +201,7 @@ function submitData()
         {
             x = 0;
             y += 8;
+            processedWidth = 0;
             processedHeight += 8;
         }
 
@@ -139,6 +226,7 @@ function submitData()
     {
         console.log("iter", el);
         spriteCanvasContainer.appendChild(el);
+        spriteCanvasContainer.appendChild(breakElement);
     }
 
     // Log that we're done!
