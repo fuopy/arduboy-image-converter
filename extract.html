@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+	<meta charset="utf-8">
+	<title>Image Extractor</title>
+
+    <style type="text/css">
+#outputCanvas {
+    border: 1px solid black;
+}
+    </style>
+</head>
+<body>
+	<h1>Arduboy Game Image Converter</h1>
+	<h3>Paste data into this page, type in the dimensions, hit convert!</h3>
+
+    Sprite data from C++ Project: <input type="text" id="dataForm"><br />
+    Sprite width: <input type="text", id="spriteWidthForm"><br />
+    Sprite height: <input type="text", id="spriteHeightForm"><br />
+
+    <input type="button" onclick="submitData();" value="Convert!">
+
+    <br />
+
+    <canvas id="outputCanvas" width=300 height=300></canvas>
+
+
+    <script type="text/javascript">
+
+//const parserExpression = /(0x\d\d+)/g;
+//const parserExpression = /(0x\d\d+)/g;
+function parseText(text)
+{
+    // Parse text into an array of bytes.
+    let outputBytes = [];
+
+    console.log("This is the input");
+    console.log(text);
+
+    for (const s of text.matchAll(/([0-9A-Fa-f][0-9A-Fa-f]+)/g))
+    {
+        console.log("converting", s, "to", parseInt(s, 16))
+        outputBytes.push(parseInt(s, 16));
+    }
+
+    console.log("wow");
+
+    return outputBytes;
+}
+
+function drawByte(context, x, y, byteValue)
+{
+    // Draw each pit as a pixel.
+    // Top: Most Significant Bit
+    context.fillStyle = (byteValue & 0b00000001) ? "white" : "black";
+    context.fillRect(x, y+0, 1, 1);
+    context.fillStyle = (byteValue & 0b00000010) ? "white" : "black";
+    context.fillRect(x, y+1, 1, 1);
+    context.fillStyle = (byteValue & 0b00000100) ? "white" : "black";
+    context.fillRect(x, y+2, 1, 1);
+    context.fillStyle = (byteValue & 0b00001000) ? "white" : "black";
+    context.fillRect(x, y+3, 1, 1);
+    context.fillStyle = (byteValue & 0b00010000) ? "white" : "black";
+    context.fillRect(x, y+4, 1, 1);
+    context.fillStyle = (byteValue & 0b00100000) ? "white" : "black";
+    context.fillRect(x, y+5, 1, 1);
+    context.fillStyle = (byteValue & 0b01000000) ? "white" : "black";
+    context.fillRect(x, y+6, 1, 1);
+    context.fillStyle = (byteValue & 0b10000000) ? "white" : "black";
+    context.fillRect(x, y+7, 1, 1);
+    // Bottom: Least Significant Bit
+}
+
+function createSpriteCanvas()
+{
+    let el = document.createElement(canvas);
+
+    
+
+    return el;
+}
+
+function submitData()
+{
+    // Get the elements and canvas context.
+    let dataForm = document.querySelector("#dataForm");
+    let spriteWidthElement = document.querySelector("#spriteWidthForm");
+    let spriteHeightElement = document.querySelector("#spriteHeightForm");
+    let outputCanvas = document.querySelector("#outputCanvas");
+    let context = outputCanvas.getContext("2d");
+    let canvasWidth = outputCanvas.width;
+    let canvasHeight = outputCanvas.height;
+    context.imageSmoothingEnabled = false;
+
+    // Get the width/height of the sprite
+    let spriteWidth = spriteWidthElement.value;
+    let spriteHeight = spriteHeightElement.value;
+
+    // Clear the canvas.
+    context.fillStyle = "gray";
+    context.fillRect(0, 0, 999, 999);
+    context.fillStyle = "white";
+
+    // Parse the C++ data.
+    let bytes = parseText(dataForm.value);
+
+    // Draw all pixels on the canvas.
+    let x = 0;
+    let y = 0;
+
+    let processedWidth = 0;
+    let processedHeight = 0;
+    for (const byte of bytes)
+    {
+        drawByte(context, x, y, byte);
+        x++;
+        processedWidth++;
+
+        // Go down eight pixels if we hit the width of the sprite.
+        if (processedWidth >= spriteWidth)
+        {
+            x = 0;
+            y += 8;
+            processedHeight += 8;
+        }
+
+        // Go down nine pixels if we hit the heightof the sprite.
+        if (processedHeight >= spriteHeight)
+        {
+            x = 0;
+            y += 9;
+            processedWidth = 0;
+            processedHeight = 0;
+        }
+    }
+
+    // Log that we're done!
+    console.log("Done.");
+}
+    </script>
+</body>
+</html>
