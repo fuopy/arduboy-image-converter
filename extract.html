@@ -6,8 +6,11 @@
 	<title>Image Extractor</title>
 
     <style type="text/css">
-#outputCanvas {
-    border: 1px solid black;
+.outputSprite {
+    border: 1px solid yellow;
+}
+body {
+    background-color: #AD8E58;
 }
     </style>
 </head>
@@ -23,7 +26,7 @@
 
     <br />
 
-    <canvas id="outputCanvas" width=300 height=300></canvas>
+    <div id="SpriteCanvasContainer"></div>
 
 
     <script type="text/javascript">
@@ -35,16 +38,11 @@ function parseText(text)
     // Parse text into an array of bytes.
     let outputBytes = [];
 
-    console.log("This is the input");
-    console.log(text);
-
     for (const s of text.matchAll(/([0-9A-Fa-f][0-9A-Fa-f]+)/g))
     {
-        console.log("converting", s, "to", parseInt(s, 16))
+        //console.log("converting", s, "to", parseInt(s, 16))
         outputBytes.push(parseInt(s, 16));
     }
-
-    console.log("wow");
 
     return outputBytes;
 }
@@ -72,11 +70,13 @@ function drawByte(context, x, y, byteValue)
     // Bottom: Least Significant Bit
 }
 
-function createSpriteCanvas()
+function createSpriteCanvas(width, height)
 {
-    let el = document.createElement(canvas);
+    let el = document.createElement("canvas");
 
-    
+    el.width = width;
+    el.height = height;
+    el.className = "outputSprite";
 
     return el;
 }
@@ -87,20 +87,11 @@ function submitData()
     let dataForm = document.querySelector("#dataForm");
     let spriteWidthElement = document.querySelector("#spriteWidthForm");
     let spriteHeightElement = document.querySelector("#spriteHeightForm");
-    let outputCanvas = document.querySelector("#outputCanvas");
-    let context = outputCanvas.getContext("2d");
-    let canvasWidth = outputCanvas.width;
-    let canvasHeight = outputCanvas.height;
-    context.imageSmoothingEnabled = false;
+    let spriteCanvasContainer = document.querySelector("#SpriteCanvasContainer");
 
     // Get the width/height of the sprite
     let spriteWidth = spriteWidthElement.value;
     let spriteHeight = spriteHeightElement.value;
-
-    // Clear the canvas.
-    context.fillStyle = "gray";
-    context.fillRect(0, 0, 999, 999);
-    context.fillStyle = "white";
 
     // Parse the C++ data.
     let bytes = parseText(dataForm.value);
@@ -108,12 +99,14 @@ function submitData()
     // Draw all pixels on the canvas.
     let x = 0;
     let y = 0;
-
     let processedWidth = 0;
     let processedHeight = 0;
+    let completedCanvases = [];
+    let activeCanvas = createSpriteCanvas(spriteWidth, spriteHeight);
+    let activeCanvasContext = activeCanvas.getContext("2d");
     for (const byte of bytes)
     {
-        drawByte(context, x, y, byte);
+        drawByte(activeCanvasContext, x, y, byte);
         x++;
         processedWidth++;
 
@@ -125,14 +118,27 @@ function submitData()
             processedHeight += 8;
         }
 
-        // Go down nine pixels if we hit the heightof the sprite.
+        // Complete the canvas if we hit the height of the sprite.
         if (processedHeight >= spriteHeight)
         {
+            // Save the completed sprite canvas.
+            completedCanvases.push(activeCanvas);
+
+            // Start a new canvas.
+            activeCanvas = createSpriteCanvas(spriteWidth, spriteHeight);
+            activeCanvasContext = activeCanvas.getContext("2d");
             x = 0;
-            y += 9;
+            y = 0;
             processedWidth = 0;
             processedHeight = 0;
         }
+    }
+
+    // Add the created element to the page.
+    for (const el of completedCanvases)
+    {
+        console.log("iter", el);
+        spriteCanvasContainer.appendChild(el);
     }
 
     // Log that we're done!
