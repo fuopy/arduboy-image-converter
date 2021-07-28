@@ -85,7 +85,7 @@ img {
         </table>
 
         <div class="submitArea">
-            <input type="button" onclick="clearData();" value="Clear All">
+            <input type="button" onclick="clearData();" value="Clear Inputs">
             <input type="button" onclick="submitData();" value="Convert">
         </div>
     </div>
@@ -149,6 +149,10 @@ function createSpriteCanvas(width, height)
     el.width = width;
     el.height = height;
     el.className = "image-view";
+    el.onclick = function() {
+        let url = el.toDataURL();
+        window.open(url);
+    };
 
     return el;
 }
@@ -163,6 +167,11 @@ function clearData()
     dataForm.value = "";
     spriteWidthElement.value = "";
     spriteHeightElement.value = "";
+}
+
+function previewImage()
+{
+    console.log("hi");
 }
 
 function submitData()
