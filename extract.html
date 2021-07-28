@@ -216,7 +216,7 @@ function submitData()
     // Create one tall canvas otherwise. Calculate the max height.
     else
     {
-        let numberOfSprites = Math.floor(bytes.length / spriteWidth);
+        let numberOfSprites = Math.floor(bytes.length / ((spriteHeight/8) * spriteWidth));
         activeCanvas = createSpriteCanvas(spriteWidth, spriteHeight * numberOfSprites);
     }
     let activeCanvasContext = activeCanvas.getContext("2d");
