@@ -82,6 +82,10 @@ img {
                 <td>Sprite height:</td>
                 <td><input type="text", id="spriteHeightForm"></td>
             </tr>
+            <tr>
+                <td>Separate sprite images:</td>
+                <td><input type="checkbox", id="separateSpriteImages"></td>
+            </tr>
         </table>
 
         <div class="submitArea">
@@ -180,6 +184,7 @@ function submitData()
     let dataForm = document.querySelector("#dataForm");
     let spriteWidthElement = document.querySelector("#spriteWidthForm");
     let spriteHeightElement = document.querySelector("#spriteHeightForm");
+    let separateSpriteImagesElement = document.querySelector("#separateSpriteImages");
     let spriteCanvasContainer = document.querySelector("#SpriteCanvasContainer");
 
     // Get the width/height of the sprite
@@ -191,13 +196,29 @@ function submitData()
 
     let breakElement = document.createElement("br");
 
+    // Setting: put each image on its own sprite.
+    let splitSpritesSetting = separateSpriteImagesElement.checked;
+
     // Draw all pixels on the canvas.
     let x = 0;
     let y = 0;
     let processedWidth = 0;
     let processedHeight = 0;
     let completedCanvases = [];
-    let activeCanvas = createSpriteCanvas(spriteWidth, spriteHeight);
+
+    let activeCanvas;
+
+    // Create many small canvases if the setting to split sprites is enabled.
+    if (splitSpritesSetting)
+    {
+        activeCanvas = createSpriteCanvas(spriteWidth, spriteHeight);
+    }
+    // Create one tall canvas otherwise. Calculate the max height.
+    else
+    {
+        let numberOfSprites = Math.floor(bytes.length / spriteWidth);
+        activeCanvas = createSpriteCanvas(spriteWidth, spriteHeight * numberOfSprites);
+    }
     let activeCanvasContext = activeCanvas.getContext("2d");
     for (const byte of bytes)
     {
@@ -214,20 +235,29 @@ function submitData()
             processedHeight += 8;
         }
 
-        // Complete the canvas if we hit the height of the sprite.
+        // Complete the sprite if we hit the height of the sprite.
         if (processedHeight >= spriteHeight)
         {
-            // Save the completed sprite canvas.
-            completedCanvases.push(activeCanvas);
+            // Split each sprite to its own image if the setting is enabled.
+            if (splitSpritesSetting)
+            {
+                // Save the completed sprite canvas.
+                completedCanvases.push(activeCanvas);
 
-            // Start a new canvas.
-            activeCanvas = createSpriteCanvas(spriteWidth, spriteHeight);
-            activeCanvasContext = activeCanvas.getContext("2d");
-            x = 0;
-            y = 0;
-            processedWidth = 0;
-            processedHeight = 0;
+                // Start a new canvas.
+                activeCanvas = createSpriteCanvas(spriteWidth, spriteHeight);
+                activeCanvasContext = activeCanvas.getContext("2d");
+                x = 0;
+                y = 0;
+                processedWidth = 0;
+                processedHeight = 0;
+            }
         }
+    }
+
+    if (!splitSpritesSetting)
+    {
+        completedCanvases.push(activeCanvas);
     }
 
     // Add the created element to the page.
